@@ -62,7 +62,8 @@ function num(v){ if(v===null||v===undefined)return null; if(typeof v==='number')
 const MESN={7:'Julho',8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'};
 function weekCols(aoa){const hdr=aoa[3]||[];const out=[];for(let c=2;c<hdr.length;c++){const h=hdr[c];if(h==null)continue;
   const m=String(h).match(/(\d{1,2})\/(\d{1,2})/);const s=String(h).match(/S\s*0*?(\d+)/);
-  if(m){const d=+m[1],mo=+m[2];out.push({c,s:s?('S'+String(+s[1]).padStart(2,'0')):('S?'),date:(''+d).padStart(2,'0')+'/'+(''+mo).padStart(2,'0'),m:mo});}}return out;}
+  if(m){const d=+m[1],mo=+m[2];const dt=new Date(2026,mo-1,d);dt.setDate(dt.getDate()-7);const em=dt.getMonth()+1;
+    out.push({c,s:s?('S'+String(+s[1]).padStart(2,'0')):('S?'),date:(''+d).padStart(2,'0')+'/'+(''+mo).padStart(2,'0'),m:em});}}return out;}
 function aggSeries(aoa,rows,wc,mode){return wc.map(w=>{let vals=rows.map(r=>num((aoa[r]||[])[w.c])).filter(x=>x!=null);
   if(!vals.length)return null;return mode==='avg'?vals.reduce((a,b)=>a+b,0)/vals.length:vals.reduce((a,b)=>a+b,0);});}
 function monthSum(series,wc,mo){let t=0;wc.forEach((w,i)=>{if(w.m===mo&&series[i]!=null)t+=series[i];});return t;}
@@ -72,6 +73,7 @@ const CFG={
    {key:'b2b',label:'B2B',rows:[34],color:'#34d399'},{key:'org',label:'Orgânico',rows:[39],color:'#e3b341'},{key:'inf',label:'Influencers',rows:[46],color:'#ef7ab0'}],
   areas:[
    {t:'Criativo · Jorge',d:'MULTI + MONO + COPO somados',kpis:[
+     {n:'Receita líquida Site (faturamento)',f:'money',rows:[4],a:'sum'},
      {n:'Criativos produzidos / sem',f:'int',rows:[6,14,22],a:'sum'},{n:'Criativos novos no ar / sem',f:'int',rows:[7,15,23],a:'sum'},
      {n:'Vencedores novos / sem',f:'int',rows:[8,16,24],a:'sum'},{n:'Receita de cliente novo (Meta)',f:'money',rows:[9,17,25],a:'sum'},
      {n:'Valor gasto em mídia (Meta Ads)',f:'money',rows:[13,21,29],a:'sum'},{n:'MER (eficiência)',f:'x',rows:[5],a:'sum'},
@@ -89,7 +91,7 @@ const CFG={
   channels:[{key:'cri',label:'Criativos',rows:[4],color:'#5aa2ff'},{key:'mkt',label:'Marketplace',rows:[16],color:'#a78bfa'},
    {key:'org',label:'Orgânico',rows:[20],color:'#e3b341'},{key:'inf',label:'Influencers',rows:[27],color:'#ef7ab0'}],
   areas:[
-   {t:'Criativo · Sabrina',d:'',kpis:[{n:'Criativos produzidos / sem',f:'int',rows:[6],a:'sum'},{n:'Criativos novos no ar / sem',f:'int',rows:[7],a:'sum'},
+   {t:'Criativo · Sabrina',d:'',kpis:[{n:'Receita líquida Site (faturamento)',f:'money',rows:[4],a:'sum'},{n:'Criativos produzidos / sem',f:'int',rows:[6],a:'sum'},{n:'Criativos novos no ar / sem',f:'int',rows:[7],a:'sum'},
      {n:'Vencedores novos / sem',f:'int',rows:[8],a:'sum'},{n:'Receita de cliente novo',f:'money',rows:[9],a:'sum'},{n:'MER (eficiência)',f:'x',rows:[5],a:'sum'},
      {n:'ROAS 7d-click (cliente novo)',f:'x',rows:[10],a:'avg'},{n:'Frequência',f:'dec',rows:[11],a:'avg'},{n:'Hook Hate',f:'pct',rows:[12],a:'avg'},
      {n:'Retenção do Corpo',f:'pct',rows:[13],a:'avg'},{n:'CAC',f:'money',rows:[14],a:'avg'},{n:'CPC',f:'money',rows:[15],a:'avg'}]},
@@ -111,6 +113,14 @@ function fmt(v,f){if(v==null)return '—';
   if(f==='money')return 'R$ '+Math.round(v).toLocaleString('pt-BR');if(f==='int')return Math.round(v).toLocaleString('pt-BR');
   if(f==='x')return v.toFixed(2).replace('.',',')+'x';if(f==='dec')return v.toFixed(2).replace('.',',');
   if(f==='pct')return (v*100).toFixed(1).replace('.',',')+'%';if(f==='dias')return Math.round(v)+' dias';return ''+v;}
+function short(v,f){ if(v==null)v=0;
+  if(f==='money')return Math.abs(v)>=1000?Math.round(v/1000)+'k':(''+Math.round(v));
+  if(f==='int')return ''+Math.round(v);
+  if(f==='x')return v.toFixed(1).replace('.',',')+'x';
+  if(f==='dec')return v.toFixed(1).replace('.',',');
+  if(f==='pct')return Math.round(v*100)+'%';
+  if(f==='dias')return ''+Math.round(v);
+  return ''+v; }
 function deltaHTML(arr){ // variação % da última semana vs a anterior
   if(!arr||arr.length<2)return '';
   const last=arr[arr.length-1]==null?0:arr[arr.length-1], prev=arr[arr.length-2]==null?0:arr[arr.length-2];
@@ -131,22 +141,23 @@ function windowIdx(bd,mo){const wc=bd.wc;const cur=[],prev=[];
   if(!idx.length){idx=[];for(let i=Math.max(0,bd.lastIdx-7);i<=bd.lastIdx;i++)idx.push(i);}return idx;}
 const tip=()=>document.getElementById('tip');
 function chart(host,seriesList,wcs){
-  const W=560,H=120,pL=6,pR=6,pT=14,pB=22,plotW=W-pL-pR,plotH=H-pT-pB,nW=wcs.length;
+  const W=560,H=128,pL=6,pR=6,pT=22,pB=22,plotW=W-pL-pR,plotH=H-pT-pB,nW=wcs.length;
   const xs=i=>pL+(nW<=1?plotW/2:i/(nW-1)*plotW);
   let all=[];seriesList.forEach(s=>s.vals.forEach(v=>all.push(v==null?0:v)));
   let mx=Math.max(...all,0),mn=Math.min(...all,0);if(mx===mn)mx=mn+1;const pad=(mx-mn)*0.14||1,top=mx+pad,bot=(mn>=0?0:mn-pad);
   const ys=v=>pT+plotH-(v-bot)/(top-bot)*plotH;const NS='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('preserveAspectRatio','none');svg.style.width='100%';svg.style.height='120px';svg.style.overflow='visible';
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('preserveAspectRatio','none');svg.style.width='100%';svg.style.height='132px';svg.style.overflow='visible';
   const defs=document.createElementNS(NS,'defs');svg.appendChild(defs);
   for(let g=0;g<=2;g++){const y=pT+plotH*g/2;const ln=document.createElementNS(NS,'line');ln.setAttribute('x1',pL);ln.setAttribute('x2',W-pR);ln.setAttribute('y1',y);ln.setAttribute('y2',y);ln.setAttribute('stroke','rgba(160,200,235,.10)');ln.setAttribute('stroke-dasharray','3 5');svg.appendChild(ln);}
-  seriesList.forEach((s)=>{const gid='g'+(GID++);const lg=document.createElementNS(NS,'linearGradient');lg.setAttribute('id',gid);lg.setAttribute('x1','0');lg.setAttribute('y1','0');lg.setAttribute('x2','0');lg.setAttribute('y2','1');
+  seriesList.forEach((s,si)=>{const gid='g'+(GID++);const lg=document.createElementNS(NS,'linearGradient');lg.setAttribute('id',gid);lg.setAttribute('x1','0');lg.setAttribute('y1','0');lg.setAttribute('x2','0');lg.setAttribute('y2','1');
     const st1=document.createElementNS(NS,'stop');st1.setAttribute('offset','0');st1.setAttribute('stop-color',s.color);st1.setAttribute('stop-opacity','0.38');
     const st2=document.createElementNS(NS,'stop');st2.setAttribute('offset','1');st2.setAttribute('stop-color',s.color);st2.setAttribute('stop-opacity','0');lg.appendChild(st1);lg.appendChild(st2);defs.appendChild(lg);
-    const pts=s.vals.map((v,i)=>({x:xs(i),y:ys(v==null?0:v)}));
+    const pts=s.vals.map((v,i)=>({x:xs(i),y:ys(v==null?0:v),v:(v==null?0:v)}));
     const area=document.createElementNS(NS,'path');area.setAttribute('d','M'+pts.map(p=>p.x+','+p.y).join(' L')+` L${pts[pts.length-1].x},${pT+plotH} L${pts[0].x},${pT+plotH} Z`);
     area.setAttribute('fill','url(#'+gid+')');svg.appendChild(area);
     const poly=document.createElementNS(NS,'polyline');poly.setAttribute('points',pts.map(p=>p.x+','+p.y).join(' '));poly.setAttribute('fill','none');poly.setAttribute('stroke',s.color);poly.setAttribute('stroke-width','2');poly.setAttribute('vector-effect','non-scaling-stroke');poly.setAttribute('stroke-linejoin','round');svg.appendChild(poly);
-    pts.forEach(p=>{const c=document.createElementNS(NS,'circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','2.4');c.setAttribute('fill',s.color);svg.appendChild(c);});});
+    pts.forEach(p=>{const c=document.createElementNS(NS,'circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','2.4');c.setAttribute('fill',s.color);svg.appendChild(c);
+      const tx=document.createElementNS(NS,'text');tx.setAttribute('x',p.x);tx.setAttribute('y',si===1?(p.y+14):(p.y-7));tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','8.5');tx.setAttribute('font-weight','700');tx.setAttribute('fill',s.color);tx.textContent=short(p.v,s.f);svg.appendChild(tx);});});
   wcs.forEach((w,i)=>{if(nW>8&&i%2!==0&&i!==nW-1)return;const tx=document.createElementNS(NS,'text');tx.setAttribute('x',xs(i));tx.setAttribute('y',H-5);tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','8.5');tx.setAttribute('fill','#64748b');tx.textContent=w.s;svg.appendChild(tx);});
   const cross=document.createElementNS(NS,'line');cross.setAttribute('stroke','rgba(255,255,255,.4)');cross.setAttribute('stroke-width','1');cross.setAttribute('y1',pT);cross.setAttribute('y2',pT+plotH);cross.style.opacity=0;svg.appendChild(cross);
   const dots=seriesList.map(s=>{const c=document.createElementNS(NS,'circle');c.setAttribute('r','4');c.setAttribute('fill',s.color);c.setAttribute('stroke','#0a1322');c.setAttribute('stroke-width','1.5');c.style.opacity=0;svg.appendChild(c);return c;});
