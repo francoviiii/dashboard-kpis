@@ -31,7 +31,8 @@ h1{font-size:19px;font-weight:750}.sub{color:#9fb0c6;font-size:13px;margin:2px 0
 .ch .n{color:#9fb0c6;font-size:12.5px}.ch .v{font-size:17px;font-weight:750;margin-top:2px}.ch .v small{font-size:11.5px;color:#9fb0c6;font-weight:600}
 .note{color:#8696ad;font-size:12.5px;margin-top:15px;line-height:1.5}.note b{color:#cdd8e8}
 .sec{margin-top:20px;padding:20px 22px}
-.sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}.sec h2{font-size:16px;font-weight:750}.sec .dono{color:#9fb0c6;font-size:12.5px}
+.sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}.sec h2{font-size:16px;font-weight:750}.sec .dono{color:#9fb0c6;font-size:12.5px}
+.faturames{margin-left:auto;display:inline-flex;align-items:baseline;gap:8px;background:rgba(63,206,133,.10);border:1px solid rgba(63,206,133,.30);border-radius:10px;padding:6px 13px;color:#9fb0c6;font-size:12px}.faturames b{color:#3fce85;font-size:17px;font-weight:800}
 .kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
 .ktile{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 15px}
 .ktile.wide{grid-column:1/-1}
@@ -189,7 +190,9 @@ function render(){const bk=STATE.brand,bd=DATA[bk],wc=bd.wc;
   document.getElementById('hsub').textContent='Mês vigente: '+MESN[mo]+' ('+(semanas[0]||'')+(semanas.length>1?'–'+semanas[semanas.length-1]:'')+') · evolução: últimas semanas do mês anterior + mês atual';
   const host=document.getElementById('sections');host.innerHTML='';
   bd.areas.forEach(ar=>{const sec=document.createElement('div');sec.className='card sec';
-    sec.innerHTML=`<div class="sechead"><h2>${ar.t}</h2>${ar.d?`<span class="dono">${ar.d}</span>`:''}</div>`;
+    const rev=ar.kpis[0];const revM=(rev&&rev.f==='money')?monthSum(rev.series,wc,mo):null;
+    const revHTML=revM!=null?`<span class="faturames">Faturamento de ${MESN[mo]}<b>${fmt(revM,'money')}</b></span>`:'';
+    sec.innerHTML=`<div class="sechead"><h2>${ar.t}</h2>${ar.d?`<span class="dono">${ar.d}</span>`:''}${revHTML}</div>`;
     const grid=document.createElement('div');grid.className='kgrid';
     const prod=ar.kpis.find(k=>k.n.startsWith('Criativos produzidos')),noar=ar.kpis.find(k=>k.n.startsWith('Criativos novos'));
     let skip=[];
@@ -207,13 +210,21 @@ function render(){const bk=STATE.brand,bd=DATA[bk],wc=bd.wc;
       const ch=document.createElement('div');ch.className='kchart';tile.appendChild(ch);grid.appendChild(tile);
       chart(ch,[{name:k.n,color:'#5aa2ff',f:k.f,vals:win.map(i=>k.series[i])}],wcs);});
     sec.appendChild(grid);host.appendChild(sec);});}
-function boot(wb){DATA=parseAll(wb);STATE.month=null;render();}
+function boot(wb,keepMonth){const m=STATE.month;DATA=parseAll(wb);STATE.month=keepMonth?m:null;render();}
+function b64enc(buf){const u=new Uint8Array(buf);let s='';const CH=0x8000;for(let i=0;i<u.length;i+=CH)s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));return btoa(s);}
+function pad2(n){return(''+n).padStart(2,'0');}
 document.getElementById('bfish').onclick=()=>{STATE.brand='fish';STATE.month=null;render();};
 document.getElementById('baristo').onclick=()=>{STATE.brand='aristo';STATE.month=null;render();};
 document.getElementById('msel').onchange=e=>{STATE.month=+e.target.value;render();};
 document.getElementById('upl').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
-  rd.onload=()=>{try{const wb=XLSX.read(rd.result,{type:'array'});boot(wb);try{localStorage.setItem('kpiwb',btoa(String.fromCharCode.apply(null,new Uint8Array(rd.result))));}catch(_){}
-    document.getElementById('ustat').textContent='✓ '+f.name;}catch(err){document.getElementById('ustat').textContent='Erro ao ler.';}};rd.readAsArrayBuffer(f);e.target.value='';};
-(function(){let buf=null;try{const s=localStorage.getItem('kpiwb');if(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);buf=u.buffer;}}catch(_){}
-  if(!buf)buf=ab();boot(XLSX.read(buf,{type:'array'}));})();
+  rd.onload=()=>{try{const wb=XLSX.read(rd.result,{type:'array'});boot(wb,true);
+    const now=new Date();const ts=pad2(now.getDate())+'/'+pad2(now.getMonth()+1)+' '+pad2(now.getHours())+':'+pad2(now.getMinutes());
+    try{localStorage.setItem('kpiwb',b64enc(rd.result));localStorage.setItem('kpiwb_ts',ts);localStorage.setItem('kpiwb_nm',f.name);}catch(_){}
+    document.getElementById('ustat').textContent='✓ usando a sua planilha · atualizada '+ts;
+  }catch(err){document.getElementById('ustat').textContent='Erro ao ler o arquivo.';}};rd.readAsArrayBuffer(f);e.target.value='';};
+(function(){let buf=null,from='base';try{const s=localStorage.getItem('kpiwb');if(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);buf=u.buffer;from='up';}}catch(_){}
+  if(!buf)buf=ab();boot(XLSX.read(buf,{type:'array'}));
+  const us=document.getElementById('ustat');
+  if(from==='up'){const ts=localStorage.getItem('kpiwb_ts')||'';us.textContent='✓ usando a sua planilha'+(ts?' · atualizada '+ts:'');}
+  else us.textContent='usando a planilha base — suba a sua para atualizar';})();
 </script></body></html>
