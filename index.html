@@ -28,7 +28,7 @@ h1{font-size:19px;font-weight:750}.sub{color:#9fb0c6;font-size:13px;margin:2px 0
 .scale{display:flex;justify-content:space-between;color:#8696ad;font-size:12px}
 .chan{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-top:16px}
 .ch{padding:13px 15px}.dot{width:10px;height:10px;border-radius:4px;display:inline-block;margin-right:6px}
-.ch .n{color:#9fb0c6;font-size:12.5px}.ch .v{font-size:17px;font-weight:750;margin-top:2px}.ch .v small{font-size:11.5px;color:#9fb0c6;font-weight:600}
+.ch .n{color:#9fb0c6;font-size:12.5px}.ch .v{font-size:15px;font-weight:750;margin-top:3px}.ch .v small{display:block;font-size:11px;color:#9fb0c6;font-weight:600;margin-top:1px}
 .note{color:#8696ad;font-size:12.5px;margin-top:15px;line-height:1.5}.note b{color:#cdd8e8}
 .sec{margin-top:20px;padding:20px 22px}
 .sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}.sec h2{font-size:16px;font-weight:750}.sec .dono{color:#9fb0c6;font-size:12.5px}
@@ -90,7 +90,8 @@ const CFG={
      {n:'Engajamento Qualificado (EQ)',f:'pct',rows:[41],a:'sum'},{n:'Conteúdos Campeões',f:'int',rows:[42],a:'sum'},{n:'Cliques gerados',f:'int',rows:[43],a:'sum'},
      {n:'Visualizações do perfil',f:'int',rows:[44],a:'sum'},{n:'Ganho de seguidores',f:'int',rows:[45],a:'sum'}]},
    {t:'Influencers & Afiliados · Marcela',d:'',kpis:[{n:'Valor em Vendas de Cupom',f:'money',rows:[46],a:'sum'},{n:'ROAS Afiliados',f:'x',rows:[47],a:'sum'},
-     {n:'Afiliados Ativos / mês',f:'int',rows:[48],a:'sum'},{n:'ROAS Influencers',f:'x',rows:[49],a:'sum'},{n:'Compliance de Entrega',f:'pct',rows:[50],a:'sum'},{n:'Contatos feitos',f:'int',rows:[51],a:'sum'}]}]},
+     {n:'Afiliados Ativos / mês',f:'int',rows:[48],a:'sum'},{n:'ROAS Influencers',f:'x',rows:[49],a:'sum'},{n:'Compliance de Entrega',f:'pct',rows:[50],a:'sum'},{n:'Contatos feitos',f:'int',rows:[51],a:'sum'},
+     {n:'Quantidade de respostas',f:'int',rows:[52],a:'sum'},{n:'Quantidade de propostas',f:'int',rows:[53],a:'sum'},{n:'Quantidade de fechamento',f:'int',rows:[54],a:'sum'}]}]},
  aristo:{sheet:'Aristocrata',metaM:{9:4167500,10:5190000,11:6590000,12:6100000},quad:22047500,
   channels:[{key:'cri',label:'Criativos',rows:[4],color:'#5aa2ff'},{key:'mkt',label:'Marketplace',rows:[16],color:'#a78bfa'},
    {key:'org',label:'Orgânico',rows:[20],color:'#e3b341'},{key:'inf',label:'Influencers',rows:[27],color:'#ef7ab0'}],
@@ -103,7 +104,8 @@ const CFG={
    {t:'Orgânico · Julia',d:'',kpis:[{n:'Faturamento / Vendas Conversão',f:'money',rows:[20],a:'sum'},{n:'Conteúdo no ar / sem',f:'int',rows:[21],a:'sum'},
      {n:'Engajamento Qualificado (EQ)',f:'pct',rows:[22],a:'sum'},{n:'Conteúdos Campeões',f:'int',rows:[23],a:'sum'},{n:'Cliques gerados',f:'int',rows:[25],a:'sum'},{n:'Ganho de seguidores',f:'int',rows:[26],a:'sum'}]},
    {t:'Influencers & Afiliados · Marcela',d:'',kpis:[{n:'Valor em Vendas de Cupom',f:'money',rows:[27],a:'sum'},{n:'ROAS Afiliados',f:'x',rows:[28],a:'sum'},
-     {n:'Afiliados Ativos / mês',f:'int',rows:[29],a:'sum'},{n:'ROAS Influencers',f:'x',rows:[30],a:'sum'},{n:'Compliance de Entrega',f:'pct',rows:[31],a:'sum'},{n:'Contatos feitos',f:'int',rows:[32],a:'sum'}]}]}
+     {n:'Afiliados Ativos / mês',f:'int',rows:[29],a:'sum'},{n:'ROAS Influencers',f:'x',rows:[30],a:'sum'},{n:'Compliance de Entrega',f:'pct',rows:[31],a:'sum'},{n:'Contatos feitos',f:'int',rows:[32],a:'sum'},
+     {n:'Quantidade de respostas',f:'int',rows:[33],a:'sum'},{n:'Quantidade de propostas',f:'int',rows:[34],a:'sum'},{n:'Quantidade de fechamento',f:'int',rows:[35],a:'sum'}]}]}
 };
 let STATE={brand:'fish',month:null},DATA=null,GID=0;
 function parseAll(wb){const res={};for(const bk of['fish','aristo']){const cfg=CFG[bk];
@@ -114,7 +116,7 @@ function parseAll(wb){const res={};for(const bk of['fish','aristo']){const cfg=C
   wc.forEach((w,i)=>{if(allS.some(s=>s[i]!=null))lastIdx=i;});
   res[bk]={wc,channels,areas,metaM:cfg.metaM,quad:cfg.quad,lastIdx};}return res;}
 function fmt(v,f){if(v==null)return '—';
-  if(f==='money')return 'R$ '+Math.round(v).toLocaleString('pt-BR');if(f==='int')return Math.round(v).toLocaleString('pt-BR');
+  if(f==='money')return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});if(f==='int')return Math.round(v).toLocaleString('pt-BR');
   if(f==='x')return v.toFixed(2).replace('.',',')+'x';if(f==='dec')return v.toFixed(2).replace('.',',');
   if(f==='pct')return (v*100).toFixed(1).replace('.',',')+'%';if(f==='dias')return Math.round(v)+' dias';return ''+v;}
 function short(v,f){ if(v==null)v=0;
@@ -134,7 +136,7 @@ function deltaHTML(arr){ // variação % da última semana vs a anterior
   if(Math.abs(p)<0.05)return '<span class="delta flat" title="vs semana anterior">0,0%</span>';
   const up=p>0;return `<span class="delta ${up?'up':'down'}" title="vs semana anterior">${up?'▲':'▼'} ${Math.abs(p).toFixed(1).replace('.',',')}%</span>`;
 }
-function kMoney(v){return 'R$ '+Math.round(v/1000).toLocaleString('pt-BR')+'k';}
+function kMoney(v){return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function mi(v){return 'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M';}
 function monthsIn(wc){const s=[];wc.forEach(w=>{if(!s.includes(w.m))s.push(w.m);});return s;}
 function defaultMonth(bd){const mk=bd.channels.find(c=>c.key==='mkt');const ms=monthsIn(bd.wc);
@@ -182,7 +184,7 @@ function render(){const bk=STATE.brand,bd=DATA[bk],wc=bd.wc;
   const chVals=bd.channels.map(c=>({...c,val:monthSum(c.series,wc,mo)}));const cons=chVals.reduce((a,c)=>a+c.val,0);
   const meta=bd.metaM[mo]||null,hasMeta=meta!=null,pct=hasMeta?cons/meta*100:null;
   const semanas=wc.filter(w=>w.m===mo).map(w=>w.s);
-  let hero=`<div class="hrow"><div class="big">R$ ${Math.round(cons).toLocaleString('pt-BR')} ${hasMeta?`<small>/ R$ ${meta.toLocaleString('pt-BR')}</small>`:''}</div>`;
+  let hero=`<div class="hrow"><div class="big">R$ ${cons.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} ${hasMeta?`<small>/ R$ ${meta.toLocaleString('pt-BR')}</small>`:''}</div>`;
   hero+=hasMeta?`<div class="pill ${pct>=100?'ok':''}">${pct.toFixed(1).replace('.',',')}% da meta · faltam ${mi(Math.max(0,meta-cons))}</div>`:`<div class="pill warn">definir meta</div>`;
   hero+='</div>';
   if(hasMeta){let acc=0;hero+='<div class="bar">';chVals.forEach(c=>{const w=Math.max(0,c.val/meta*100);hero+=`<div class="seg" style="left:${acc}%;width:${w}%;background:${c.color}"></div>`;acc+=w;});hero+=`<div class="mk" style="left:100%"></div></div><div class="scale"><span>0</span><span>meta ${mi(meta)}</span></div>`;}
