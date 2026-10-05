@@ -32,7 +32,10 @@ h1{font-size:19px;font-weight:750}.sub{color:#9fb0c6;font-size:13px;margin:2px 0
 .note{color:#8696ad;font-size:12.5px;margin-top:15px;line-height:1.5}.note b{color:#cdd8e8}
 .sec{margin-top:20px;padding:20px 22px}
 .sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}.sec h2{font-size:16px;font-weight:750}.sec .dono{color:#9fb0c6;font-size:12.5px}
-.faturames{margin-left:auto;display:inline-flex;align-items:baseline;gap:8px;background:rgba(63,206,133,.10);border:1px solid rgba(63,206,133,.30);border-radius:10px;padding:6px 13px;color:#9fb0c6;font-size:12px}.faturames b{color:#3fce85;font-size:17px;font-weight:800}
+.mtot{background:linear-gradient(135deg,rgba(63,206,133,.14),rgba(63,206,133,.05));border:1px solid rgba(63,206,133,.34)}
+.mtot .mtl{color:#9fdcbb;font-size:12.5px;font-weight:650;letter-spacing:.02em}
+.mtot .mtv{color:#3fce85;font-size:30px;font-weight:850;margin:3px 0 1px;letter-spacing:-.5px}
+.mtot .mtw{color:#7fa690;font-size:11px}
 .kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
 .ktile{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 15px}
 .ktile.wide{grid-column:1/-1}
@@ -190,10 +193,13 @@ function render(){const bk=STATE.brand,bd=DATA[bk],wc=bd.wc;
   document.getElementById('hsub').textContent='Mês vigente: '+MESN[mo]+' ('+(semanas[0]||'')+(semanas.length>1?'–'+semanas[semanas.length-1]:'')+') · evolução: últimas semanas do mês anterior + mês atual';
   const host=document.getElementById('sections');host.innerHTML='';
   bd.areas.forEach(ar=>{const sec=document.createElement('div');sec.className='card sec';
-    const rev=ar.kpis[0];const revM=(rev&&rev.f==='money')?monthSum(rev.series,wc,mo):null;
-    const revHTML=revM!=null?`<span class="faturames">Faturamento de ${MESN[mo]}<b>${fmt(revM,'money')}</b></span>`:'';
-    sec.innerHTML=`<div class="sechead"><h2>${ar.t}</h2>${ar.d?`<span class="dono">${ar.d}</span>`:''}${revHTML}</div>`;
+    sec.innerHTML=`<div class="sechead"><h2>${ar.t}</h2>${ar.d?`<span class="dono">${ar.d}</span>`:''}</div>`;
     const grid=document.createElement('div');grid.className='kgrid';
+    const rev=ar.kpis[0];
+    if(rev&&rev.f==='money'){const revM=monthSum(rev.series,wc,mo);
+      const mt=document.createElement('div');mt.className='ktile wide mtot';
+      mt.innerHTML=`<div class="mtl">Faturamento do mês · ${MESN[mo]}</div><div class="mtv">${fmt(revM,'money')}</div><div class="mtw">soma das semanas de ${MESN[mo]}: ${semanas.join(', ')||'—'}</div>`;
+      grid.appendChild(mt);}
     const prod=ar.kpis.find(k=>k.n.startsWith('Criativos produzidos')),noar=ar.kpis.find(k=>k.n.startsWith('Criativos novos'));
     let skip=[];
     if(prod&&noar){skip=[prod.n,noar.n];const lpi=win[win.length-1];const tile=document.createElement('div');tile.className='ktile wide';
